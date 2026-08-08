@@ -22,9 +22,6 @@ else
     echo "You are running with the root access" | tee -a $LOG_FILE
 fi
 
-echo "Please enter root password to setup"
-read -s MYSQL_ROOT_PASSWORD
-
 # validate function takes inputs exit status as $1 and which command they try to install as $2
 VALIDATE(){
         if [ $1 -eq 0 ]
@@ -36,8 +33,8 @@ VALIDATE(){
     fi
 }
 
-dnf install maven -y &>>$LOG_FILE
-VALIDATE $? "Installing Maven and Java"
+dnf install python3 gcc python3-devel -y &>>$LOG_FILE
+VALIDATE $? "Installing python3 packages"
 
 id roboshop &>>$LOG_FILE
 if [ $? -ne  0 ]
@@ -51,44 +48,24 @@ fi
 mkdir -p /app &>>$LOG_FILE
 VALIDATE $? "Creating app directory"
 
-curl -L -o /tmp/shipping.zip https://roboshop-artifacts.s3.amazonaws.com/shipping-v3.zip &>>$LOG_FILE
-VALIDATE $? "Downloading shipping"
+curl -L -o /tmp/payment.zip https://roboshop-artifacts.s3.amazonaws.com/payment-v3.zip &>>$LOG_FILE
+VALIDATE $? "Downloading payment"
 
 rm -rf /app/* &>>$LOG_FILE
 cd /app 
-unzip /tmp/shipping.zip &>>$LOG_FILE
-VALIDATE $? "unzipping shipping"
+unzip /tmp/payment.zip &>>$LOG_FILE
+VALIDATE $? "unzipping payment"
 
-mvn clean package &>>$LOG_FILE
-VALIDATE $? "Packaging the shipping application"
+pip3 install -r requirements.txt &>>$LOG_FILE
+VALIDATE $? "Installing dependencies"
 
-mv target/shipping-1.0.jar shipping.jar &>>$LOG_FILE
-VALIDATE $? "Moving and renaming Jar file"
-
-cp $SCRIPT_DIR/shipping.service /etc/systemd/system/shipping.service
-VALIDATE $? "Copying shiping service"
+cp $SCRIPT_DIR/payment.service /etc/systemd/system/payment.service
+VALIDATE $? "Copying payment service"
 
 systemctl daemon-reload &>>$LOG_FILE
-systemctl enable shipping &>>$LOG_FILE
-systemctl start shipping &>>$LOG_FILE
-VALIDATE $? "Starting shipping"
-
-dnf install mysql -y &>>$LOG_FILE
-VALIDATE $? "Installing MySQL"
-
-mysql -h mysql.daws84s.online -u root -pRoboShop@1 -e "use cities"
-if [ $? -ne 0 ]
-then
-    mysql -h mysql.daws84s.online -uroot -p$MYSQL_ROOT_PASSWORD < /app/db/schema.sql &>>$LOG_FILE
-    mysql -h mysql.daws84s.online -uroot -p$MYSQL_ROOT_PASSWORD < /app/db/app-user.sql &>>$LOG_FILE
-    mysql -h mysql.daws84s.online -uroot -p$MYSQL_ROOT_PASSWORD < /app/db/master-data.sql &>>$LOG_FILE
-    VALIDATE $? "Loading data into MySQL"
-else
-    echo -e "Data is already loaded into MySQL ... $Y SKIPPING $N"
-fi
-
-systemctl restart shipping &>>$LOG_FILE
-VALIDATE $? "Restarting shipping"
+systemctl enable payment &>>$LOG_FILE
+systemctl start payment &>>$LOG_FILE
+VALIDATE $? "Starting payment"
 
 END_TIME=$(date +%s)
 TOTAL_TIME=$(( $END_TIME - $START_TIME ))
