@@ -66,7 +66,7 @@ mv target/shipping-1.0.jar shipping.jar &>>$LOG_FILE
 VALIDATE $? "Moving and renaming Jar file"
 
 cp $SCRIPT_DIR/shipping.service /etc/systemd/system/shipping.service
-VALIDATE $? "Copying shiping service"
+VALIDATE $? "Copying shipping service"
 
 systemctl daemon-reload &>>$LOG_FILE
 systemctl enable shipping &>>$LOG_FILE
