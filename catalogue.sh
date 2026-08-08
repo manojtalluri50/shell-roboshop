@@ -78,5 +78,11 @@ VALIDATE $? "Copying MongoDB Repo"
 dnf install mongodb-mongosh -y &>>$LOG_FILE
 VALIDATE $? "Installing MongoDB Client"
 
-mongosh --host mongodb.daws84s.online </app/db/master-data.js &>>$LOG_FILE
-VALIDATE $? "Loading data into MongoDB"
+STATUS=$(mongosh --host mongodb.daws84s.site --eval 'db.getMongo().getDBNames().indexOf("catalogue")')
+if [ $STATUS -lt 0]
+then
+    mongosh --host mongodb.daws84s.online </app/db/master-data.js &>>$LOG_FILE
+    VALIDATE $? "Loading data into MongoDB"
+else
+    echo -e "Data is already loaded ... $Y SKIPPING $N"
+fi
